@@ -1,5 +1,17 @@
 {
     "emmet.includeLanguages": {
         "*.tsx": "html"
-    }
+    },
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "Battleships",
+            "database": "main",
+            "username": "postgres",
+            "password": "password"
+        }
+    ]
 }
