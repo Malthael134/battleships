@@ -1,0 +1,1 @@
+DROP TABLE "battleships_post";

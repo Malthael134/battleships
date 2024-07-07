@@ -2,6 +2,8 @@ import { relations, sql } from "drizzle-orm";
 import {
     index,
     integer,
+    jsonb,
+    pgEnum,
     pgTableCreator,
     primaryKey,
     serial,
@@ -19,27 +21,6 @@ import { type AdapterAccount } from "next-auth/adapters";
  */
 export const createTable = pgTableCreator((name) => `battleships_${name}`);
 
-export const posts = createTable(
-    "post",
-    {
-        id: serial("id").primaryKey(),
-        name: varchar("name", { length: 256 }),
-        createdById: varchar("created_by", { length: 255 })
-            .notNull()
-            .references(() => users.id),
-        createdAt: timestamp("created_at", { withTimezone: true })
-            .default(sql`CURRENT_TIMESTAMP`)
-            .notNull(),
-        updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
-            () => new Date(),
-        ),
-    },
-    (example) => ({
-        createdByIdIdx: index("created_by_idx").on(example.createdById),
-        nameIndex: index("name_idx").on(example.name),
-    }),
-);
-
 export const users = createTable("user", {
     id: varchar("id", { length: 255 })
         .notNull()
@@ -54,7 +35,7 @@ export const users = createTable("user", {
     image: varchar("image", { length: 255 }),
 });
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
     accounts: many(accounts),
 }));
 
@@ -128,3 +109,16 @@ export const verificationTokens = createTable(
         compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
     }),
 );
+
+export const colorScheme = pgEnum("color_scheme", ["system", "light", "dark"]);
+
+/**
+ * Stores the preferences for users.
+ */
+export const preferences = createTable("preference", {
+    id: serial("id").primaryKey().notNull(),
+    userId: varchar("user_id", { length: 255 })
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    colorScheme: colorScheme("color_scheme").notNull().default("system"),
+});

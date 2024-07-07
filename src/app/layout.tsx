@@ -1,9 +1,11 @@
 import "@/styles/globals.css";
-
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
-
 import { TRPCReactProvider } from "@/trpc/react";
+import { getServerAuthSession } from "@/server/auth";
+import { preferences } from "@/server/db/schema";
+import { Inter } from "next/font/google";
+import GlobalStoreProvider from "@/components/global-store-provider";
 
 export const metadata: Metadata = {
     title: "Create T3 App",
@@ -11,13 +13,26 @@ export const metadata: Metadata = {
     icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-export default function RootLayout({
+const inter = Inter({ subsets: ["latin"] });
+
+export default async function RootLayout({
     children,
 }: Readonly<{ children: React.ReactNode }>) {
+    const { user } = { user: "" };
+
+    const session = await getServerAuthSession();
+
+    const colorScheme: typeof preferences.$inferSelect.colorScheme = "system";
+
+    if (!session) {
+    }
+
     return (
-        <html lang="en" className={`${GeistSans.variable}`}>
-            <body>
-                <TRPCReactProvider>{children}</TRPCReactProvider>
+        <html lang="en" className={`${GeistSans.variable} ${colorScheme}`}>
+            <body className={inter.className}>
+                <TRPCReactProvider>
+                    <GlobalStoreProvider>{children}</GlobalStoreProvider>
+                </TRPCReactProvider>
             </body>
         </html>
     );

@@ -1,7 +1,6 @@
-import Game from "@/components/Game";
 import { getServerAuthSession } from "@/server/auth";
 import { HydrateClient } from "@/trpc/server";
-import { Canvas } from "@react-three/fiber";
+import ThemeToggle from "@/components/theme-toggle";
 
 export default async function Home() {
     const session = await getServerAuthSession();
@@ -15,7 +14,10 @@ export default async function Home() {
     return (
         <HydrateClient>
             <main>
-                <Game />
+                <h1 className="text-3xl">Welcome!</h1>
+                <span>{text}</span>
+                <h2 className="text-2xl">Your preferences:</h2>
+                <ThemeToggle theme={"system"} />
             </main>
         </HydrateClient>
     );
