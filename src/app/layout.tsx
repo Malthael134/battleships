@@ -3,9 +3,13 @@ import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
 import { TRPCReactProvider } from "@/trpc/react";
 import { getServerAuthSession } from "@/server/auth";
-import { preferences } from "@/server/db/schema";
+import { preferences as preferencesTable } from "@/server/db/schema";
 import { Inter } from "next/font/google";
-import GlobalStoreProvider from "@/components/global-store-provider";
+import { db } from "@/server/db";
+import { Session } from "next-auth";
+import { eq } from "drizzle-orm";
+import ThemeProvider from "@/components/theme-provider";
+import Topnav from "@/components/topnav";
 
 export const metadata: Metadata = {
     title: "Create T3 App",
@@ -15,25 +19,62 @@ export const metadata: Metadata = {
 
 const inter = Inter({ subsets: ["latin"] });
 
+interface RootLayoutProps {
+    children: React.ReactNode
+}
+
 export default async function RootLayout({
     children,
-}: Readonly<{ children: React.ReactNode }>) {
-    const { user } = { user: "" };
-
+}: Readonly<RootLayoutProps>) {
     const session = await getServerAuthSession();
-
-    const colorScheme: typeof preferences.$inferSelect.colorScheme = "system";
-
-    if (!session) {
-    }
+    const userPreferences = await getUserPreferences(session);
 
     return (
-        <html lang="en" className={`${GeistSans.variable} ${colorScheme}`}>
-            <body className={inter.className}>
+        <html
+            lang="en"
+            className={`${GeistSans.variable}`}
+            /* The theme provider causes a hydration mismatch error, because we don't know the theme during ssr.
+             * We can ignore that by setting `suppressHydrationWarning` to `true` as done below.
+             */
+            suppressHydrationWarning
+        >
+            <body className={`${inter.className} w-full`}>
                 <TRPCReactProvider>
-                    <GlobalStoreProvider>{children}</GlobalStoreProvider>
+                    <ThemeProvider
+                        attribute="class"
+                        defaultTheme="system"
+                        enableSystem
+                        disableTransitionOnChange
+                    >
+                        <Topnav />
+                        {children}
+                    </ThemeProvider>
                 </TRPCReactProvider>
             </body>
         </html>
     );
+}
+
+async function getUserPreferences(
+    session: Session | null,
+): Promise<Omit<typeof preferencesTable.$inferSelect, "id" | "userId">> {
+    const preferences = await db.query.preferences.findFirst({
+        where: eq(preferencesTable.userId, session?.user.id ?? ""),
+    });
+
+    if (!preferences) {
+        if (session) {
+            await db.insert(preferencesTable).values({
+                userId: session.user.id,
+            });
+        }
+
+        return {
+            colorScheme: "system",
+        };
+    }
+
+    return {
+        ...preferences,
+    };
 }
